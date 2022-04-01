@@ -1,17 +1,18 @@
 import 'dart:convert';
+import 'dart:ffi';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
 import 'package:http/http.dart' as http;
-import 'package:pichint/models/photo_model.dart';
 
 class ApiService {
-  final String _baseUrl = 'http://192.168.0.105:3000';
+  String baseUrl = 'http://172.20.10.9:3000';
 
-  Future<Widget> getImage(path) async {
+  Future<Uint8List?> getImage(path) async {
     try {
       final response = await http.post(
-        Uri.parse(_baseUrl + '/photo'),
+        Uri.parse(baseUrl + '/photo'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -19,31 +20,50 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         // var token = json.decode(response.body)['token'];
-        // print(token);
-        return Image.memory(response.bodyBytes);
+        return response.bodyBytes;
       } else {
-        return const Text('not 200');
+        return null;
       }
     } catch (ex) {
-      print(ex);
-      return Text(ex.toString());
+      return null;
     }
   }
 
   Future<bool> uploadImage(img, filename) async {
+    bool isSuccess;
     var formData = FormData.fromMap(
-        {'image': await MultipartFile.fromBytes(img, filename: filename)});
+        {'image': MultipartFile.fromBytes(img, filename: filename)});
     try {
-      final response = await Dio().post(_baseUrl + '/upload',
+      final response = await Dio().post(baseUrl + '/upload',
           data: formData, onSendProgress: (int sent, int total) {});
       if (response.statusCode == 200) {
-        return true;
+        isSuccess = true;
       } else {
-        return false;
+        isSuccess = false;
       }
     } on DioError catch (ex) {
       print(ex.toString());
-      return false;
+      isSuccess = false;
     }
+    return isSuccess;
+  }
+
+  Future<bool> calcImageValue(img, filename) async {
+    bool isSuccess;
+    var formData = FormData.fromMap(
+        {'image': MultipartFile.fromBytes(img, filename: filename)});
+    try {
+      final response = await Dio().post(baseUrl + '/upload',
+          data: formData, onSendProgress: (int sent, int total) {});
+      if (response.statusCode == 200) {
+        isSuccess = true;
+      } else {
+        isSuccess = false;
+      }
+    } on DioError catch (ex) {
+      print(ex.toString());
+      isSuccess = false;
+    }
+    return isSuccess;
   }
 }

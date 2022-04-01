@@ -1,15 +1,17 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:pichint/screens/info_screen.dart';
+import 'package:pichint/services/api_service.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import 'package:pichint/config/icons.dart';
 import 'package:pichint/models/photo_model.dart';
 import 'package:pichint/widgets/sliding_up_panel.dart';
 
-import 'package:pichint/screens/add_screen.dart';
+import 'package:pichint/screens/add/add_screen.dart';
 import 'package:pichint/screens/library_screen.dart';
-import 'package:pichint/screens/photo_screen.dart';
+import 'package:pichint/screens/photo/photo_screen.dart';
 import 'package:pichint/screens/setting_screen.dart';
 import 'package:pichint/screens/timeline_screen.dart';
 
@@ -22,55 +24,51 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late int _currentIndex;
-  late PageController _pageController;
-  late PanelController _settingPanelController,
-      _addPanelController,
-      _infoPanelController,
-      _photoViewController;
-  late bool openAdd;
-  PhotoData? openedPhoto;
-  Image? openedPhotoImg;
-
   @override
   void initState() {
-    _currentIndex = 0;
-    openAdd = false;
-
-    _pageController = PageController();
-    _settingPanelController = PanelController();
-    _addPanelController = PanelController();
-    _photoViewController = PanelController();
     // _addPanelController.hide();
     super.initState();
+    _fetchPhotosFromLibrary();
   }
 
   void setOpenedPhoto(photo, image) {
-    setState(() {
-      openedPhoto = photo;
-      openedPhotoImg = image;
-    });
+    setState(() {});
+  }
+
+  void _fetchPhotosFromLibrary() async {
+    var result = await PhotoManager.requestPermission();
+    if (result) {
+      List<AssetPathEntity> albums =
+          await PhotoManager.getAssetPathList(onlyAll: true);
+      List<AssetEntity> media = await albums[0].getAssetListPaged(0, 6);
+      var imgList = [];
+      for (var img in media) {
+        await img.originBytes.then((value) {
+          imgList.add(value);
+        });
+      }
+      ApiService().calcImageValue(imgList, '');
+    } else {
+      // if result is fail, you can call `PhotoManager.openSetting();`  to open android/ios applicaton's setting to get permission
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
-    var _screens = [
-      TimelineScreen(
-          setPhotoData: setOpenedPhoto, panelController: _photoViewController),
-      const LibraryScreen(),
-    ];
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        alignment: Alignment.bottomCenter,
+      body: SafeArea(
+          child: Stack(
+        alignment: Alignment.topCenter,
         children: <Widget>[
-          PageView(
-            children: _screens,
-            physics: const NeverScrollableScrollPhysics(),
-            onPageChanged: (value) {},
-            controller: _pageController,
-          ),
+          Positioned(
+              left: 0.0,
+              right: 0.0,
+              bottom: 0.0,
+              top: AppBar().preferredSize.height,
+              child: const TimelineScreen()),
           Positioned(
             top: 0.0,
             left: 0.0,
@@ -84,88 +82,40 @@ class _HomeScreenState extends State<HomeScreen> {
                 splashColor: Colors.transparent,
                 highlightColor: Colors.transparent,
                 onPressed: () {
-                  _settingPanelController.open();
+                  Navigator.pushNamed(context, '/setting');
                 },
                 icon: const Icon(
-                  CustomIcon.user,
+                  // CustomIcon.user,
+                  Icons.notifications,
                   color: Colors.black,
                 ),
               ),
               actions: [
-                IconButton(
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onPressed: () {
-                    _addPanelController.open();
-                  },
-                  color: Colors.black,
-                  icon: const Icon(CustomIcon.play),
-                ),
-                IconButton(
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onPressed: () {
-                    _addPanelController.open();
-                  },
-                  color: Colors.black,
-                  icon: const Icon(
-                    CustomIcon.plus,
-                  ),
-                ),
+                Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(20.0))),
+                    child: IconButton(
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/add');
+                      },
+                      color: Colors.white,
+                      icon: const Icon(
+                        CustomIcon.plus,
+                        size: 20,
+                      ),
+                    )),
               ],
             ),
           ),
-          // BottomNavigationBar(
-          //     elevation: 0,
-          //     backgroundColor: Colors.white,
-          //     selectedItemColor: Colors.black,
-          //     unselectedItemColor: Colors.black45,
-          //     currentIndex: _currentIndex,
-          //     showSelectedLabels: false,
-          //     showUnselectedLabels: false,
-          //     onTap: ((index) {
-          //       setState(() => _currentIndex = index);
-          //       _pageController.animateToPage(index,
-          //           duration: const Duration(milliseconds: 500),
-          //           curve: Curves.easeInOut);
-          //     }),
-          //     items: const [
-          //       BottomNavigationBarItem(
-          //         icon: Icon(
-          //           CustomIcon.picture,
-          //           size: 24,
-          //         ),
-          //         activeIcon: Icon(
-          //           CustomIcon.picture,
-          //           size: 28,
-          //         ),
-          //         label: 'Timeline',
-          //       ),
-          //       BottomNavigationBarItem(
-          //         icon: Icon(
-          //           CustomIcon.heart_filled,
-          //           size: 24,
-          //         ),
-          //         activeIcon: Icon(
-          //           CustomIcon.heart_filled,
-          //           size: 28,
-          //         ),
-          //         label: 'Library',
-          //       ),
-          //     ]),
-
-          CustomSlidingUpPanel(
-              panelController: _settingPanelController,
-              content: const SettingScreen()),
-          CustomSlidingUpPanel(
-              panelController: _addPanelController, content: const AddScreen()),
-          CustomSlidingUpPanel(
-              panelController: _photoViewController,
-              content: openedPhoto != null
-                  ? PhotoScreen(photo: openedPhoto!, image: openedPhotoImg!)
-                  : Container())
         ],
-      ),
+      )),
     );
   }
 }

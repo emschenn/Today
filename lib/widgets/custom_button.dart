@@ -19,8 +19,9 @@ class CustomButton extends StatelessWidget {
     return TextButton(
       style: TextButton.styleFrom(
         backgroundColor: color,
+        textStyle: Theme.of(context).textTheme.button,
         primary: textColor,
-        minimumSize: const Size(160, 42),
+        minimumSize: const Size(120, 42),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(50.0)),
         ),
@@ -28,7 +29,9 @@ class CustomButton extends StatelessWidget {
       onPressed: () {
         onClick();
       },
-      child: Text(text),
+      child: Text(
+        text,
+      ),
     );
   }
 }

@@ -1,61 +1,23 @@
 import 'dart:async';
 
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_database/ui/firebase_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pichint/models/user_model.dart';
 import 'package:pichint/services/firebase_service.dart';
 import 'package:pichint/utils/datetime.dart';
+import 'package:pichint/utils/map.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import 'package:pichint/models/photo_model.dart';
-import 'package:pichint/screens/photo_screen.dart';
+import 'package:pichint/screens/photo/photo_screen.dart';
 import 'package:pichint/widgets/date_text.dart';
 import 'package:pichint/widgets/photos_grid_view.dart';
 
-List<PhotoData> data2 = [
-  PhotoData(
-      id: '1',
-      author: "陳",
-      description:
-          "純非下去了嗎純非下去了嗎純非下去了嗎非下去了嗎純非下去了嗎純非下去了嗎純非下去了嗎純非下去了嗎非下去了嗎純非下去了嗎純非下去了嗎純非下去了嗎純非下去了嗎非下去了嗎純非下去了嗎",
-      path: "images/test.jpg",
-      date: DateTime.parse('2020-01-01')),
-  PhotoData(
-      id: '2',
-      author: "amy",
-      description:
-          "純非下去了嗎純非下去了嗎純非下去了嗎非下去了嗎純非下去了嗎純非下去了嗎純非下去了嗎純非下去了嗎非下去了嗎純非下去了嗎純非下去了嗎純非下去了嗎純非下去了嗎非下去了嗎純非下去了嗎",
-      path: "images/2.jpg",
-      date: DateTime.parse('2020-01-01')),
-  PhotoData(
-      id: '3',
-      author: "amy",
-      description: "2",
-      path: "images/3.jpg",
-      date: DateTime.parse('2020-01-01')),
-  PhotoData(
-      id: '4',
-      author: "amy",
-      description: "2",
-      path: "images/4.jpg",
-      date: DateTime.parse('2020-01-02')),
-  PhotoData(
-      id: '5',
-      author: "amy",
-      description: "2",
-      path: "images/5.jpg",
-      date: DateTime.parse('2020-01-02')),
-];
-
 class TimelineScreen extends StatefulWidget {
-  final PanelController panelController;
-  final Function setPhotoData;
-
   const TimelineScreen({
     Key? key,
-    required this.panelController,
-    required this.setPhotoData,
   }) : super(key: key);
 
   @override
@@ -68,15 +30,16 @@ class _TimelineScreenState extends State<TimelineScreen>
   final _storage = const FlutterSecureStorage();
   ScrollController _scrollController = ScrollController();
   FirebaseService firebaseHandler = FirebaseService();
-  late Map<DateTime, List<PhotoData>> _preprocessedData;
+  late Map<DateTime, List<PhotoData>> _preprocessedData, _currentShownData;
   late List<Widget> _photosView;
-  late StreamSubscription _groupsPhotoStream;
+  // late StreamSubscription _groupsPhotoStream;
   PhotoData? openedPhoto;
 
   @override
   void initState() {
     _photosView = [];
     _preprocessedData = {};
+    _currentShownData = {};
     _storage.read(key: 'uid').then((uid) {
       firebaseHandler.getUserData(uid).then((user) {
         _activateListener(user.group);
@@ -86,32 +49,30 @@ class _TimelineScreenState extends State<TimelineScreen>
     super.initState();
   }
 
-  void _activateListener(group) {
-    _groupsPhotoStream =
-        database.child('/groups/$group').onValue.listen((event) {
-      // print(event.snapshot.value);
-      final json = event.snapshot.value as Map<dynamic, dynamic>;
-      final pid = json.keys;
-      List<PhotoData> photos = [];
-      for (int i = 0; i < json.keys.length; i++) {
-        PhotoData p = PhotoData.fromJson(
-          pid.elementAt(i),
-          json.values.elementAt(i),
-        );
-        photos.add(p);
-      }
-
-      setState(() {
-        _preprocessedData = _getPreprocessedData(photos);
-      });
-      _loadView();
-    });
+  void _activateListener(group) async {
+    List<PhotoData> photos = [];
+    FirebaseList(
+        query: database.child('/groups/$group'),
+        onValue: (snapshot) {
+          print('onValue');
+          snapshot.children.forEach((child) {
+            PhotoData p = PhotoData.fromJson(
+                child.key, child.value as Map<dynamic, dynamic>);
+            photos.add(p);
+          });
+          if (photos.isNotEmpty) {
+            setState(() {
+              _preprocessedData = _getPreprocessedData(photos);
+            });
+            _loadData(true);
+          }
+        });
   }
 
   void _scrollListener() {
     // print(_scrollController.position.extentAfter);
     if (_scrollController.position.extentAfter < 100) {
-      _loadView();
+      _loadData(false);
     }
   }
 
@@ -123,16 +84,15 @@ class _TimelineScreenState extends State<TimelineScreen>
 
   @override
   void deactivate() {
-    _groupsPhotoStream.cancel();
+    // _groupsPhotoStream.cancel();
     super.deactivate();
   }
 
-  Map<DateTime, List<PhotoData>> _getPreprocessedData(photos) {
-    // List<PhotoData> photos = List.from(data.reversed);
+  Map<DateTime, List<PhotoData>> _getPreprocessedData(data) {
+    List<PhotoData> photos = List.from(data.reversed);
     DateTime date = photos[0].date!;
     List<PhotoData> photoSect = [];
     Map<DateTime, List<PhotoData>> map = <DateTime, List<PhotoData>>{};
-
     for (var photo in photos) {
       if (isSameDate(date, photo.date!)) {
         photoSect.add(photo);
@@ -143,9 +103,26 @@ class _TimelineScreenState extends State<TimelineScreen>
         date = photo.date!;
       }
     }
-
     map[date] = photoSect;
     return map;
+  }
+
+  void _loadData(bool refresh) {
+    int currentCounts = _currentShownData.length;
+    if (currentCounts < _preprocessedData.length) {
+      var start = currentCounts;
+      var end = start + 4 < _preprocessedData.length
+          ? start + 4
+          : _preprocessedData.length;
+      var keysToAdd = _preprocessedData.keys.toList().sublist(start, end);
+      var valuesToAdd = _preprocessedData.values.toList().sublist(start, end);
+      Map<DateTime, List<PhotoData>> dataToAdd = {
+        for (int i = 0; i < keysToAdd.length; i++) keysToAdd[i]: valuesToAdd[i]
+      };
+      setState(() {
+        _currentShownData = Map.from(_currentShownData)..addAll(dataToAdd);
+      });
+    }
   }
 
   void _loadView() {
@@ -161,9 +138,8 @@ class _TimelineScreenState extends State<TimelineScreen>
         setState(() {
           _photosView.add(DateText(date: dateList[i]));
           _photosView.add(PhotosGridView(
-              setPhotoData: widget.setPhotoData,
-              photos: photoList[i],
-              panelController: widget.panelController));
+            photos: photoList[i],
+          ));
         });
       }
     }
@@ -176,13 +152,22 @@ class _TimelineScreenState extends State<TimelineScreen>
     return SingleChildScrollView(
         controller: _scrollController,
         child: Column(children: [
+          if (_currentShownData.isNotEmpty)
+            ..._currentShownData.entries.map((entry) {
+              var date = DateText(date: entry.key);
+              var grid = PhotosGridView(
+                photos: entry.value,
+              );
+              return Column(children: [date, grid]);
+            }).toList(),
           const SizedBox(
-            height: 60,
+            height: 30,
           ),
-          ..._photosView,
-          const SizedBox(
-            height: 100,
-          ),
+          GestureDetector(
+              child: Text('fff'),
+              onTap: () {
+                _loadData(true);
+              })
         ]));
   }
 

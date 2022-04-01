@@ -22,7 +22,7 @@ class DateText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
         alignment: Alignment.topLeft,
-        padding: const EdgeInsets.fromLTRB(20, 30, 10, 4),
+        padding: const EdgeInsets.fromLTRB(20, 14, 10, 10),
         child: Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
@@ -32,7 +32,7 @@ class DateText extends StatelessWidget {
                   fontFamily: 'LeagueSpartan',
                   fontSize: 24,
                   letterSpacing: 1,
-                  fontWeight: FontWeight.w300),
+                  fontWeight: FontWeight.w400),
             ),
             const SizedBox(
               width: 8,
@@ -43,7 +43,7 @@ class DateText extends StatelessWidget {
                   fontFamily: 'LeagueSpartan',
                   fontSize: 14,
                   letterSpacing: 1,
-                  fontWeight: FontWeight.w200),
+                  fontWeight: FontWeight.w300),
             )
           ],
         ));

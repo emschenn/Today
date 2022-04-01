@@ -1,5 +1,4 @@
 import 'package:firebase_database/firebase_database.dart';
-import 'package:pichint/models/photo_model.dart';
 import 'package:pichint/models/user_model.dart';
 
 class FirebaseService {
@@ -17,13 +16,27 @@ class FirebaseService {
 
   Future<bool> addPhoto(group, photo) async {
     final groupRef = _database.child('/groups/$group');
+    bool isSuccess = false;
     await groupRef.push().set(photo.toJson()).then((_) {
       print('write to db successfully');
-      return true;
+      isSuccess = true;
     }).catchError((err) {
       print(err);
-      return false;
+      isSuccess = false;
     });
-    return false;
+    return isSuccess;
+  }
+
+  Future<bool> deletePhoto(group, photo) async {
+    final groupRef = _database.child('/groups/$group/${photo.pid}');
+    bool isSuccess = false;
+    await groupRef.remove().then((_) {
+      print('remove from db successfully');
+      isSuccess = true;
+    }).catchError((err) {
+      print(err);
+      isSuccess = false;
+    });
+    return isSuccess;
   }
 }
