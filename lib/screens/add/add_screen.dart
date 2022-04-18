@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:pichint/models/photo_model.dart';
 import 'package:pichint/models/user_model.dart';
@@ -31,14 +33,15 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
   late UserData user;
   List<dynamic> _photoList = [];
   Uint8List? selectedImage;
+  bool loadingSelectedImage = false;
 
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
-    _fetchNewMedia();
     user = GlobalService().getUserData;
+    _fetchNewMedia();
     _scrollController = ScrollController();
     _editorController = TextEditingController();
     _focusAnimationController = AnimationController(
@@ -55,31 +58,58 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
   }
 
   void _fetchNewMedia() async {
-    var result = await PhotoManager.requestPermission();
-    if (result) {
-      List<AssetPathEntity> albums =
-          await PhotoManager.getAssetPathList(onlyAll: true);
-      List<AssetEntity> media = await albums[0].getAssetListPaged(0, 6);
+    var result = await ApiService().getRecommendedImage(user);
+    if (result != null) {
       var imgList = [];
-      for (var img in media) {
-        await img.originBytes.then((value) {
-          imgList.add(value);
-        });
+      for (var img in result.images) {
+        imgList.add(base64.decoder.convert(img));
       }
       setState(() {
         _photoList = imgList;
       });
     } else {
-      // if result is fail, you can call `PhotoManager.openSetting();`  to open android/ios applicaton's setting to get permission
+      //error
     }
+    // var result = await PhotoManager.requestPermission();
+    // if (result) {
+    //   List<AssetPathEntity> albums =
+    //       await PhotoManager.getAssetPathList(onlyAll: true);
+    //   List<AssetEntity> media = await albums[0].getAssetListPaged(0, 6);
+    //   var imgList = [];
+    //   for (var img in media) {
+    //     await img
+    //         .thumbDataWithSize(600, 600 * img.height ~/ img.width)
+    //         .then((value) {
+    //       imgList.add(value);
+    //     });
+    //   }
+    //   setState(() {
+    //     _photoList = imgList;
+    //   });
+    // } else {
+    // }
   }
 
-  void selectedImageFormGallery() async {
+  void _selectedImageFormGallery() async {
+    var originalImage = selectedImage;
+    setState(() {
+      selectedImage = null;
+      loadingSelectedImage = true;
+    });
     final XFile? file = await _imgPicker.pickImage(source: ImageSource.gallery);
     if (file != null) {
-      final Uint8List byteData = await file.readAsBytes();
+      final Uint8List? byteData = await FlutterImageCompress.compressWithFile(
+        file.path,
+        quality: 25,
+      );
       setState(() {
+        loadingSelectedImage = false;
         selectedImage = byteData;
+      });
+    } else {
+      setState(() {
+        loadingSelectedImage = false;
+        selectedImage = originalImage;
       });
     }
   }
@@ -130,17 +160,39 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                             width: contentWidth * 0.76,
                             color: Colors.grey[100],
                             child: selectedImage == null
-                                ? Center(
-                                    child: Text('從下方選擇欲分享的照片',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyText1))
-                                : Image.memory(selectedImage!)),
+                                ? loadingSelectedImage
+                                    ? const SpinKitThreeBounce(
+                                        color: Colors.black45,
+                                        size: 30.0,
+                                      )
+                                    : Center(
+                                        child: Text('從下方選擇欲分享的照片',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyText1))
+                                : Hero(
+                                    tag: selectedImage!,
+                                    child: Image.memory(
+                                      selectedImage!,
+                                      frameBuilder: (context, child, frame,
+                                          wasSynchronouslyLoaded) {
+                                        if (wasSynchronouslyLoaded)
+                                          return child;
+                                        return frame != null
+                                            ? child
+                                            : const SpinKitThreeBounce(
+                                                color: Colors.black45,
+                                                size: 30.0,
+                                              );
+                                      },
+                                    ))),
                         _photoList.isEmpty
-                            ? const SpinKitThreeBounce(
-                                color: Colors.white,
-                                size: 50.0,
-                              )
+                            ? SizedBox(
+                                height: 100,
+                                child: SpinKitThreeBounce(
+                                  color: Theme.of(context).primaryColorLight,
+                                  size: 30.0,
+                                ))
                             : GridView(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
@@ -171,6 +223,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                                                         _photoList[index])))))
                                 ],
                               ),
+
                         Container(
                             margin: const EdgeInsets.symmetric(
                                 vertical: 10, horizontal: 8),
@@ -192,7 +245,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                                     )),
                                 GestureDetector(
                                     onTap: () {
-                                      selectedImageFormGallery();
+                                      _selectedImageFormGallery();
                                     },
                                     child: Wrap(
                                       crossAxisAlignment:

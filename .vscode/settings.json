@@ -3,5 +3,5 @@
     "editor.defaultFormatter": "Dart-Code.dart-code",
     "editor.formatOnSave": true
   },
-  "cSpell.words": ["pichint"]
+  "cSpell.words": ["pichint", "Workmanager"]
 }

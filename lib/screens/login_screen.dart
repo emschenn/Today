@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pichint/services/firebase_service.dart';
 import 'package:pichint/services/global_service.dart';
 import 'package:pichint/widgets/custom_button.dart';
+import 'package:workmanager/workmanager.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -18,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _storage = const FlutterSecureStorage();
   final _global = GlobalService();
+  final _firebaseService = FirebaseService();
   String _errorMsg = '';
 
   Future login() async {
@@ -27,14 +30,26 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _accountController.text.trim(),
         password: _passwordController.text.trim(),
       );
+      String uid = userCredential.user!.uid;
       await _storage
           .write(
         key: 'uid',
-        value: userCredential.user!.uid,
+        value: uid,
       )
-          .then((value) {
-        FirebaseService().getUserData(userCredential.user!.uid).then((user) {
+          .then((value) async {
+        String? token = await FirebaseMessaging.instance.getToken();
+        await _firebaseService.setUserMsgToken(uid, token);
+        _firebaseService.getUserData(uid).then((user) {
           _global.setUserData = user;
+          Workmanager().registerPeriodicTask(
+            "1",
+            "calcNewPhotos",
+            inputData: <String, dynamic>{
+              'uid': user.uid,
+              'path': '${user.group}/${user.isParent! ? 'parent' : 'child'}',
+              'timestamp': user.latestTimestamp,
+            },
+          );
           Navigator.pushReplacementNamed(context, '/home');
         });
       });

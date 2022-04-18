@@ -5,9 +5,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:pichint/services/api_service.dart';
+import 'package:workmanager/workmanager.dart';
 
 import 'package:pichint/models/user_model.dart';
 import 'package:pichint/config/theme.dart';
+import 'package:pichint/screens/splash_screen.dart';
 import 'package:pichint/services/firebase_service.dart';
 import 'package:pichint/services/global_service.dart';
 
@@ -21,8 +24,31 @@ Future<void> backgroundMessageHandler(RemoteMessage msg) async {
   print(msg.notification!.title);
 }
 
+void callbackDispatcher() {
+  Workmanager().executeTask((taskName, inputData) {
+    print('work manager 🌟' + taskName);
+    switch (taskName) {
+      case Workmanager.iOSBackgroundTask:
+        print("The iOS background fetch was triggered");
+        break;
+      case "calcNewPhotos":
+        print('hello');
+        ApiService().collectImages(inputData);
+        print(
+            "Replace this print statement with your code that should be executed in the background here");
+        break;
+    }
+    return Future.value(true);
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Workmanager().initialize(
+      callbackDispatcher, // The top level function, aka callbackDispatcher
+      isInDebugMode:
+          true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+      );
   await Firebase.initializeApp();
   runApp(const MyApp());
 }
@@ -45,7 +71,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    getUserDate();
     LocalNotificationService.initialize(context);
 
     /// Handler when app is closed and user taps
@@ -73,36 +98,30 @@ class _MyAppState extends State<MyApp> {
     super.initState();
   }
 
-  void getUserDate() {
-    _storage.read(key: 'uid').then((value) async {
-      await FirebaseService().getUserData(value).then((value) {
-        _global.setUserData = value;
-        setState(() {
-          user = value;
-        });
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: basicTheme(),
       debugShowCheckedModeBanner: false,
-      home:
-          // FutureBuilder(
-          //   future: _firebaseApp,
-          //   builder: (context, snapshot) {
-          //     if (snapshot.hasError) {
-          //       return Text(snapshot.error.toString());
-          //     } else if (snapshot.hasData) {
-          //       return
-          user == null ? const LoginScreen() : const HomeScreen(),
-      //   } else {
-      //     return const Text('loading');
-      //   }
-      // },
-      // ),
+      home: FutureBuilder(
+        future: _storage.read(key: 'uid').then((value) async {
+          UserData? user;
+          await FirebaseService().getUserData(value).then((value) {
+            _global.setUserData = value;
+            user = value;
+          });
+          return user;
+        }),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const LoginScreen();
+          } else if (snapshot.hasData) {
+            return const HomeScreen();
+          } else {
+            return const SplashScreen();
+          }
+        },
+      ),
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/home':

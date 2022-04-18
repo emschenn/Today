@@ -1,19 +1,13 @@
-import 'dart:async';
-
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_database/ui/firebase_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:pichint/models/user_model.dart';
 import 'package:pichint/services/firebase_service.dart';
 import 'package:pichint/utils/datetime.dart';
-import 'package:pichint/utils/map.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import 'package:pichint/models/photo_model.dart';
-import 'package:pichint/screens/photo/photo_screen.dart';
-import 'package:pichint/widgets/date_text.dart';
-import 'package:pichint/widgets/photos_grid_view.dart';
+import 'package:pichint/screens/timeline/date_text.dart';
+import 'package:pichint/screens/timeline/photos_grid_view.dart';
 
 class TimelineScreen extends StatefulWidget {
   const TimelineScreen({
@@ -160,14 +154,6 @@ class _TimelineScreenState extends State<TimelineScreen>
               );
               return Column(children: [date, grid]);
             }).toList(),
-          const SizedBox(
-            height: 30,
-          ),
-          GestureDetector(
-              child: Text('fff'),
-              onTap: () {
-                _loadData(true);
-              })
         ]));
   }
 

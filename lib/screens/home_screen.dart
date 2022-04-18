@@ -1,19 +1,10 @@
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:pichint/screens/info_screen.dart';
 import 'package:pichint/services/api_service.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import 'package:pichint/config/icons.dart';
-import 'package:pichint/models/photo_model.dart';
-import 'package:pichint/widgets/sliding_up_panel.dart';
 
-import 'package:pichint/screens/add/add_screen.dart';
-import 'package:pichint/screens/library_screen.dart';
-import 'package:pichint/screens/photo/photo_screen.dart';
-import 'package:pichint/screens/setting_screen.dart';
-import 'package:pichint/screens/timeline_screen.dart';
+import 'package:pichint/screens/timeline/timeline_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -28,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // _addPanelController.hide();
     super.initState();
-    _fetchPhotosFromLibrary();
+    // _fetchPhotosFromLibrary();
   }
 
   void setOpenedPhoto(photo, image) {
@@ -47,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
           imgList.add(value);
         });
       }
-      ApiService().calcImageValue(imgList, '');
+      // ApiService().calcImageValue(imgList, '');
     } else {
       // if result is fail, you can call `PhotoManager.openSetting();`  to open android/ios applicaton's setting to get permission
     }
@@ -78,19 +69,46 @@ class _HomeScreenState extends State<HomeScreen> {
               centerTitle: false,
               title: const Text('', style: TextStyle(color: Colors.black)),
               backgroundColor: Colors.white,
-              leading: IconButton(
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                onPressed: () {
-                  Navigator.pushNamed(context, '/setting');
-                },
-                icon: const Icon(
-                  // CustomIcon.user,
-                  Icons.notifications,
-                  color: Colors.black,
-                ),
-              ),
+              // leading: GestureDetector(
+              //     onTap: () {
+              //       Navigator.pushNamed(context, '/setting');
+              //     },
+              //     child: Transform.translate(
+              //         offset: const Offset(4, 0),
+              //         child: Container(
+              //             margin: const EdgeInsets.symmetric(
+              //                 horizontal: 8, vertical: 8),
+              //             decoration: BoxDecoration(
+              //               color: Theme.of(context).primaryColorLight,
+              //               borderRadius:
+              //                   const BorderRadius.all(Radius.circular(100.0)),
+              //             )))),
+
+              // IconButton(
+              //   splashColor: Colors.transparent,
+              //   highlightColor: Colors.transparent,
+              //   onPressed: () {
+              //     Navigator.pushNamed(context, '/setting');
+              //   },
+              //   icon: const Icon(
+              //     // CustomIcon.user,
+              //     Icons.notifications,
+              //     color: Colors.black,
+              //   ),
+              // ),
               actions: [
+                Transform.translate(
+                    offset: const Offset(8, 0),
+                    child: Container(
+                      width: 80,
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 10),
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColorLight,
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(20.0))),
+                    )),
                 Container(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
                     margin: const EdgeInsets.symmetric(
