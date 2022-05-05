@@ -31,16 +31,18 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
   late ScrollController _scrollController;
   late AnimationController _focusAnimationController;
   late UserData user;
-  List<dynamic> _photoList = [];
+  List<dynamic>? _photoList;
   Uint8List? selectedImage;
   bool loadingSelectedImage = false;
+  bool showRec = false;
+  bool selectFromRec = false;
 
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
-    user = GlobalService().getUserData;
+    user = GlobalService().getUserData!;
     _fetchNewMedia();
     _scrollController = ScrollController();
     _editorController = TextEditingController();
@@ -58,36 +60,44 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
   }
 
   void _fetchNewMedia() async {
-    var result = await ApiService().getRecommendedImage(user);
+    var result = await ApiService().getRecommendedImage(user.uid);
     if (result != null) {
       var imgList = [];
       for (var img in result.images) {
         imgList.add(base64.decoder.convert(img));
       }
+      if (imgList.isEmpty) {
+        _fetchMediaFromLibrary();
+      } else {
+        setState(() {
+          showRec = true;
+          _photoList = imgList;
+        });
+      }
+    } else {
+      _fetchMediaFromLibrary();
+    }
+  }
+
+  void _fetchMediaFromLibrary() async {
+    var result = await PhotoManager.requestPermission();
+    if (result) {
+      List<AssetPathEntity> albums =
+          await PhotoManager.getAssetPathList(onlyAll: true);
+      List<AssetEntity> media = await albums[0].getAssetListPaged(0, 6);
+      var imgList = [];
+      for (var img in media) {
+        await img
+            .thumbDataWithSize(600, 600 * img.height ~/ img.width)
+            .then((value) {
+          imgList.add(value);
+        });
+      }
       setState(() {
+        showRec = false;
         _photoList = imgList;
       });
-    } else {
-      //error
-    }
-    // var result = await PhotoManager.requestPermission();
-    // if (result) {
-    //   List<AssetPathEntity> albums =
-    //       await PhotoManager.getAssetPathList(onlyAll: true);
-    //   List<AssetEntity> media = await albums[0].getAssetListPaged(0, 6);
-    //   var imgList = [];
-    //   for (var img in media) {
-    //     await img
-    //         .thumbDataWithSize(600, 600 * img.height ~/ img.width)
-    //         .then((value) {
-    //       imgList.add(value);
-    //     });
-    //   }
-    //   setState(() {
-    //     _photoList = imgList;
-    //   });
-    // } else {
-    // }
+    } else {}
   }
 
   void _selectedImageFormGallery() async {
@@ -105,6 +115,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
       setState(() {
         loadingSelectedImage = false;
         selectedImage = byteData;
+        selectFromRec = false;
       });
     } else {
       setState(() {
@@ -123,8 +134,12 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
         backgroundColor: Colors.white,
         appBar: CustomAppBar(
             title: '分享照片',
+            centerTitle: true,
             action: selectedImage != null
                 ? TextButton(
+                    style: ButtonStyle(
+                        overlayColor:
+                            MaterialStateProperty.all(Colors.transparent)),
                     child: Text('下一步',
                         style: TextStyle(
                             color: Theme.of(context).primaryColorDark)),
@@ -135,12 +150,16 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                           type: PageTransitionType.fade,
                           duration: const Duration(milliseconds: 200),
                           reverseDuration: const Duration(milliseconds: 250),
-                          child: AddDescScreen(image: selectedImage!),
+                          child: AddDescScreen(
+                              image: selectedImage!, isFromRec: selectFromRec),
                         ),
                       );
                     })
                 : Container(),
             leading: TextButton(
+                style: ButtonStyle(
+                    overlayColor:
+                        MaterialStateProperty.all(Colors.transparent)),
                 child: Text('取消',
                     style:
                         TextStyle(color: Theme.of(context).primaryColorDark)),
@@ -176,8 +195,9 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                                       selectedImage!,
                                       frameBuilder: (context, child, frame,
                                           wasSynchronouslyLoaded) {
-                                        if (wasSynchronouslyLoaded)
+                                        if (wasSynchronouslyLoaded) {
                                           return child;
+                                        }
                                         return frame != null
                                             ? child
                                             : const SpinKitThreeBounce(
@@ -186,44 +206,73 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                                               );
                                       },
                                     ))),
-                        _photoList.isEmpty
-                            ? SizedBox(
-                                height: 100,
-                                child: SpinKitThreeBounce(
-                                  color: Theme.of(context).primaryColorLight,
-                                  size: 30.0,
-                                ))
-                            : GridView(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  mainAxisSpacing: 2,
-                                  crossAxisSpacing: 2,
+                        if (_photoList == null)
+                          SizedBox(
+                              height: 100,
+                              child: SpinKitThreeBounce(
+                                color: Theme.of(context).primaryColorLight,
+                                size: 30.0,
+                              ))
+                        else ...[
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                  width: size.width,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 10, horizontal: 8),
+                                  child: Text(
+                                    showRec ? '✨ 你可能想分享的照片' : '從相簿中選擇',
+                                    textAlign: TextAlign.left,
+                                  )),
+                              if (_photoList!.isEmpty && !showRec)
+                                Container(
+                                    width: size.width,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 34),
+                                    child: Text('相簿中尚無照片',
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .caption))
+                              else
+                                GridView(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    mainAxisSpacing: 2,
+                                    crossAxisSpacing: 2,
+                                  ),
+                                  children: [
+                                    for (int index = 0;
+                                        index < _photoList!.length;
+                                        index++)
+                                      InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              selectedImage =
+                                                  _photoList![index];
+                                              selectFromRec =
+                                                  showRec ? true : false;
+                                            });
+                                          },
+                                          child: Container(
+                                              decoration: BoxDecoration(
+                                                  border: Border.all(
+                                                    color: Colors.white,
+                                                  ),
+                                                  image: DecorationImage(
+                                                      fit: BoxFit.cover,
+                                                      image: MemoryImage(
+                                                          _photoList![
+                                                              index])))))
+                                  ],
                                 ),
-                                children: [
-                                  for (int index = 0;
-                                      index < _photoList.length;
-                                      index++)
-                                    InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            selectedImage = _photoList[index];
-                                          });
-                                        },
-                                        child: Container(
-                                            decoration: BoxDecoration(
-                                                border: Border.all(
-                                                  color: Colors.white,
-                                                ),
-                                                image: DecorationImage(
-                                                    fit: BoxFit.cover,
-                                                    image: MemoryImage(
-                                                        _photoList[index])))))
-                                ],
-                              ),
-
+                            ],
+                          ),
+                        ],
                         Container(
                             margin: const EdgeInsets.symmetric(
                                 vertical: 10, horizontal: 8),

@@ -5,16 +5,20 @@ class UserData {
   String? name;
   String? msgToken;
   int? latestTimestamp;
-  bool? isParent;
+  int? notifyWhenViewCountsEqual;
+  String? identity;
+  bool? enableViewedNotify;
 
   UserData(
       {this.uid,
       this.email,
       this.group,
       this.name,
-      this.isParent,
+      this.identity,
       this.msgToken,
-      this.latestTimestamp});
+      this.latestTimestamp,
+      this.notifyWhenViewCountsEqual,
+      this.enableViewedNotify});
 
   UserData.fromJson(Map<dynamic, dynamic> json, String id) {
     uid = id;
@@ -23,7 +27,9 @@ class UserData {
     name = json['name'];
     msgToken = json['msgToken'];
     latestTimestamp = json['latestTimestamp'];
-    isParent = json['isParent'];
+    identity = json['identity'];
+    notifyWhenViewCountsEqual = json['notifyWhenViewCountsEqual'];
+    enableViewedNotify = json['enableViewedNotify'];
   }
 
   Map<dynamic, dynamic> toJson() {
@@ -34,7 +40,9 @@ class UserData {
     data['name'] = name;
     data['msgToken'] = msgToken;
     data['latestTimestamp'] = latestTimestamp;
-    data['isParent'] = isParent;
+    data['identity'] = identity;
+    data['notifyWhenViewCountsEqual'] = notifyWhenViewCountsEqual;
+    data['enableViewedNotify'] = enableViewedNotify;
     return data;
   }
 }

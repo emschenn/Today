@@ -11,7 +11,7 @@ class GlobalService {
 
   UserData? user;
 
-  UserData get getUserData => user!;
+  UserData? get getUserData => user;
 
   set setUserData(UserData value) => user = value;
 }

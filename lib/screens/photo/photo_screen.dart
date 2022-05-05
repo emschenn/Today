@@ -1,5 +1,6 @@
-import 'dart:typed_data';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:pichint/services/api_service.dart';
 import 'package:pichint/services/firebase_service.dart';
 
@@ -12,7 +13,6 @@ import 'package:pichint/widgets/custom_appbar.dart';
 
 import 'package:pichint/config/icons.dart';
 import 'package:pichint/models/photo_model.dart';
-import 'package:pichint/widgets/custom_button.dart';
 
 class PhotoScreen extends StatefulWidget {
   final PhotoData photo;
@@ -28,12 +28,32 @@ class PhotoScreen extends StatefulWidget {
 class _PhotoScreenState extends State<PhotoScreen> {
   late PanelController _actionPanelController;
   late UserData user;
+  late FirebaseService _firebaseService;
 
   @override
   void initState() {
-    user = GlobalService().getUserData;
+    user = GlobalService().getUserData!;
     _actionPanelController = PanelController();
+    _firebaseService = FirebaseService();
+    recordUserViewUponEnter();
+    logEvent();
     super.initState();
+  }
+
+  void logEvent() async {
+    await FirebaseAnalytics.instance.logEvent(
+      name: "view_photo",
+      parameters: {
+        "timestamp": DateTime.now().toString(),
+        "user_id": user.uid,
+        "photo_id": widget.photo.pid,
+      },
+    );
+  }
+
+  void recordUserViewUponEnter() async {
+    await _firebaseService.updatePhotoViewCount(
+        user, widget.photo.pid, widget.photo.authorId);
   }
 
   String formattedDateTime(dateTime) {
@@ -55,6 +75,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
         backdropEnabled: true,
         renderPanelSheet: false,
         minHeight: 0,
+        maxHeight: size.height,
         controller: _actionPanelController,
         panel: EditPanel(
             photo: widget.photo,
@@ -62,121 +83,118 @@ class _PhotoScreenState extends State<PhotoScreen> {
             closePanel: () {
               _actionPanelController.close();
             }),
-        body: Scaffold(
-            appBar: CustomAppBar(
-                elevation: 0,
-                action: IconButton(
-                    icon: const Icon(
-                      Icons.more_horiz,
-                      color: Colors.black,
-                    ),
-                    onPressed: () {
-                      _actionPanelController.open();
-                    }),
-                leading: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_rounded,
-                      color: Colors.black,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    })),
-            backgroundColor: Colors.white,
-            body: SafeArea(
-                child: Stack(children: [
-              Positioned.fill(
-                  child: SingleChildScrollView(
-                child: Container(
-                    padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
-                    child: Column(
-                      children: [
-                        Hero(
-                            tag: widget.photo.pid!,
-                            child: Image.network(
-                                '${ApiService().baseUrl}/img/${widget.photo.filename!}')),
-                        Container(
-                            padding: const EdgeInsets.fromLTRB(
-                                20.0, 20.0, 20.0, 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Wrap(
-                                  crossAxisAlignment: WrapCrossAlignment.center,
+        body: MediaQuery(
+            data: MediaQueryData.fromWindow(WidgetsBinding.instance!.window)
+                .copyWith(boldText: false),
+            child: Scaffold(
+                appBar: CustomAppBar(
+                    elevation: 0,
+                    action: IconButton(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        icon: const Icon(
+                          Icons.more_horiz,
+                          color: Colors.black,
+                        ),
+                        onPressed: () {
+                          _actionPanelController.open();
+                        }),
+                    leading: IconButton(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        icon: const Icon(
+                          Icons.arrow_back_ios_rounded,
+                          color: Colors.black,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        })),
+                backgroundColor: Colors.white,
+                body: SafeArea(
+                    child: Stack(children: [
+                  Positioned.fill(
+                      child: SingleChildScrollView(
+                    child: Container(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
+                        child: Column(
+                          children: [
+                            Hero(
+                                tag: widget.photo.pid!,
+                                child: Image.network(
+                                  '${ApiService().baseUrl}/img/${widget.photo.filename!}',
+                                  errorBuilder: (BuildContext context,
+                                      Object exception,
+                                      StackTrace? stackTrace) {
+                                    return SizedBox(
+                                        height: size.width,
+                                        child: BlurHash(
+                                            imageFit: BoxFit.fill,
+                                            hash: widget.photo.blurHash!));
+                                  },
+                                )),
+                            Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                    20.0, 20.0, 20.0, 16.0),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(
-                                      CustomIcon.user,
+                                    Wrap(
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      children: [
+                                        Transform.translate(
+                                            offset: const Offset(0.0, 1),
+                                            child: const Icon(
+                                              CustomIcon.user,
+                                              size: 20,
+                                            )),
+                                        const SizedBox(
+                                          width: 6,
+                                        ),
+                                        FutureBuilder(
+                                          initialData: '',
+                                          future: _firebaseService.getUserName(
+                                              widget.photo.authorId),
+                                          builder: (context, snapshot) {
+                                            return Text(
+                                              snapshot.data.toString(),
+                                              strutStyle: const StrutStyle(
+                                                height: 1.5,
+                                              ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyText2,
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
-                                    FutureBuilder(
-                                      future: FirebaseService()
-                                          .getUserName(widget.photo.authorId),
-                                      builder: (context, snapshot) {
-                                        return Text(
-                                          snapshot.data.toString(),
-                                          strutStyle: const StrutStyle(
-                                            height: 1.5,
-                                          ),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyText2,
-                                        );
-                                      },
-                                    ),
+                                    Text(
+                                      formattedDateTime(widget.photo.date!),
+                                      // strutStyle: const StrutStyle(
+                                      //   height: 1,
+                                      // ),
+                                      style: const TextStyle(
+                                          fontFamily: 'LeagueSpartan',
+                                          fontSize: 13,
+                                          letterSpacing: 0.5,
+                                          fontWeight: FontWeight.w500),
+                                    )
                                   ],
-                                ),
-                                Text(
-                                  formattedDateTime(widget.photo.date!),
-                                  // strutStyle: const StrutStyle(
-                                  //   height: 1,
-                                  // ),
-                                  style: const TextStyle(
-                                      fontFamily: 'LeagueSpartan',
-                                      fontSize: 13,
-                                      letterSpacing: 1,
-                                      fontWeight: FontWeight.w300),
-                                )
-                              ],
-                            )),
-                        Container(
-                            alignment: Alignment.topLeft,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 20.0),
-                            child: Text(
-                              widget.photo.description!,
-                              style: Theme.of(context).textTheme.bodyText1,
-                            )),
-                      ],
-                    )),
-              )),
-              Positioned(
-                  bottom: 0.0,
-                  left: 0.0,
-                  right: 0.0,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(10.0, 10.0, 20.0, 20.0),
-                    color: Colors.white,
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          CustomButton(
-                            width: 180,
-                            color: Theme.of(context).primaryColorLight,
-                            text: '我想多看到此類內容',
-                            textColor: Colors.white,
-                            onClick: () {},
-                          ),
-                          // const SizedBox(
-                          //   width: 20,
-                          // ),
-                          // const Icon(
-                          //   CustomIcon.export_icon,
-                          // ),
-                        ]),
+                                )),
+                            Container(
+                                alignment: Alignment.topLeft,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20.0),
+                                child: Text(
+                                  widget.photo.description!,
+                                  style: Theme.of(context).textTheme.bodyText1,
+                                )),
+                          ],
+                        )),
                   )),
-            ]))));
+                ])))));
   }
 }

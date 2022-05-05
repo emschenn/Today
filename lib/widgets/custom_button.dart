@@ -20,6 +20,7 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton(
       style: TextButton.styleFrom(
+        splashFactory: NoSplash.splashFactory,
         backgroundColor: color,
         textStyle: Theme.of(context).textTheme.button,
         primary: textColor,

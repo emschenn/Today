@@ -9,7 +9,7 @@ ThemeData basicTheme() {
           fontFamily: 'LeagueSpartan'),
       subtitle1: base.subtitle1?.copyWith(
           fontSize: 20,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w500,
           fontFamily: 'LeagueSpartan'),
       subtitle2: base.subtitle1?.copyWith(
           fontSize: 18,
@@ -17,13 +17,13 @@ ThemeData basicTheme() {
           fontFamily: 'LeagueSpartan'),
       bodyText1: base.bodyText1?.copyWith(
         fontSize: 15,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w500,
       ),
       bodyText2:
           base.bodyText1?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
       caption: base.caption?.copyWith(
         fontSize: 13,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w500,
       ),
       button: base.subtitle1?.copyWith(
           fontSize: 15,
@@ -42,9 +42,9 @@ ThemeData basicTheme() {
       primaryColorDark: const Color(0xFF4f4f4f),
       highlightColor: Color.fromARGB(255, 221, 158, 143),
       primaryColorLight: const Color(0xFFDFC344),
-      scaffoldBackgroundColor: const Color(0xFfBDBDBD),
+      scaffoldBackgroundColor: const Color(0xFfE4E0CE),
       errorColor: const Color.fromARGB(255, 182, 31, 31),
       inputDecorationTheme: const InputDecorationTheme(
-        labelStyle: TextStyle(color: Color(0xFfBDBDBD)),
+        labelStyle: TextStyle(color: Color(0xFfE4E0CE)),
       ));
 }

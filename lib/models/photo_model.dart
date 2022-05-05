@@ -3,30 +3,34 @@ class PhotoData {
   DateTime? date;
   String? description;
   String? authorId;
-  String? path;
   String? filename;
   String? blurHash;
-  int? timestamp;
 
-  PhotoData(
-      {this.pid,
-      this.blurHash,
-      this.date,
-      this.description,
-      this.authorId,
-      this.path,
-      this.filename,
-      this.timestamp});
+  PhotoData({
+    this.pid,
+    this.blurHash,
+    this.date,
+    this.description,
+    this.authorId,
+    this.filename,
+  });
 
-  PhotoData.fromJson(id, Map<dynamic, dynamic> json) {
+  PhotoData.fromJson(String? id, Map<dynamic, dynamic> json) {
     pid = id;
     date = DateTime.parse(json['date']);
     blurHash = json['blurHash'];
     authorId = json['authorId'];
     description = json['description'];
-    path = json['path'];
     filename = json['filename'];
-    timestamp = json['timestamp'];
+  }
+
+  PhotoData.fromJsonWithId(Map<dynamic, dynamic> json) {
+    pid = json['pid'];
+    date = DateTime.parse(json['date']);
+    blurHash = json['blurHash'];
+    authorId = json['authorId'];
+    description = json['description'];
+    filename = json['filename'];
   }
 
   Map<dynamic, dynamic> toJson() {
@@ -35,9 +39,12 @@ class PhotoData {
     data['description'] = description;
     data['blurHash'] = blurHash;
     data['authorId'] = authorId;
-    data['path'] = path;
     data['filename'] = filename;
-    data['timestamp'] = timestamp;
     return data;
   }
+
+  //  @override
+  // String toString() {
+  //   return '{ ${this.date}, ${this.age} }';
+  // }
 }

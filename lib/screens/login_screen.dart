@@ -1,12 +1,14 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 import 'package:pichint/services/firebase_service.dart';
 import 'package:pichint/services/global_service.dart';
+import 'package:pichint/utils/show_dialog.dart';
 import 'package:pichint/widgets/custom_button.dart';
-import 'package:workmanager/workmanager.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -19,11 +21,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final _accountController = TextEditingController();
   final _passwordController = TextEditingController();
   final _storage = const FlutterSecureStorage();
-  final _global = GlobalService();
   final _firebaseService = FirebaseService();
   String _errorMsg = '';
+  bool _isLoading = false;
 
   Future login() async {
+    setState(() {
+      _isLoading = true;
+    });
     try {
       UserCredential userCredential =
           await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -39,17 +44,25 @@ class _LoginScreenState extends State<LoginScreen> {
           .then((value) async {
         String? token = await FirebaseMessaging.instance.getToken();
         await _firebaseService.setUserMsgToken(uid, token);
-        _firebaseService.getUserData(uid).then((user) {
-          _global.setUserData = user;
-          Workmanager().registerPeriodicTask(
-            "1",
-            "calcNewPhotos",
-            inputData: <String, dynamic>{
-              'uid': user.uid,
-              'path': '${user.group}/${user.isParent! ? 'parent' : 'child'}',
-              'timestamp': user.latestTimestamp,
+        _firebaseService.getUserData(uid).then((user) async {
+          await FirebaseAnalytics.instance.setUserProperty(
+            name: 'identity',
+            value: user.identity == 'mom' || user.identity == 'dad'
+                ? 'parent'
+                : 'child',
+          );
+          await FirebaseAnalytics.instance.logEvent(
+            name: "login",
+            parameters: {
+              "timestamp": DateTime.now().toString(),
+              "user_id": uid,
             },
           );
+          GlobalService().setUserData = user;
+          setState(() {
+            _isLoading = false;
+          });
+          print(GlobalService().getUserData!.uid);
           Navigator.pushReplacementNamed(context, '/home');
         });
       });
@@ -58,7 +71,18 @@ class _LoginScreenState extends State<LoginScreen> {
       _passwordController.clear();
       setState(() {
         _errorMsg = e.code.replaceAll('-', ' ');
+        _isLoading = false;
       });
+      if (e.code == 'network-request-failed') {
+        await showAlertDialog(
+            context: context,
+            title: "發生錯誤",
+            content: "請確定手機是否正確連上網路後再試一次。若問題持續發生，請聯繫研究人員 💬",
+            confirmText: "確定",
+            confirmAction: () {
+              Navigator.of(context).pop(false);
+            });
+      }
     }
   }
 
@@ -77,15 +101,16 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
-
+    var borderRadius = const BorderRadius.all(Radius.circular(8.0));
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-          child: Center(
-              child: Column(children: [
-        Image.asset('assets/main.jpg', height: size.height * 0.5),
+          child: SafeArea(
+              child: Center(
+                  child: Column(children: [
+        Image.asset('assets/login.png', height: size.height * 0.5),
         SizedBox(
-          height: size.height * 0.45,
+          height: size.height * 0.4,
           width: size.width * 0.65,
           child: Center(
               child: Column(
@@ -100,19 +125,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _accountController,
                     enableSuggestions: false,
                     autocorrect: false,
-                    decoration: const InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 0.0, horizontal: 10.0),
-                      hintText: '請輸入帳號（您的信箱）',
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0.0, horizontal: 10.0),
+                      hintText: '請輸入帳號 (您的信箱)',
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                        borderSide: BorderSide(color: Colors.black26),
+                        borderRadius: borderRadius,
+                        borderSide: const BorderSide(color: Colors.black26),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black45),
-                        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                        borderSide: const BorderSide(color: Colors.black45),
+                        borderRadius: borderRadius,
                       ),
-                      hintStyle: TextStyle(color: Colors.black45),
+                      hintStyle: const TextStyle(color: Colors.black45),
                     ),
                     cursorColor: Theme.of(context).primaryColor,
                     style: Theme.of(context).textTheme.bodyText1),
@@ -124,19 +149,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: true,
                     autocorrect: false,
                     enableSuggestions: false,
-                    decoration: const InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 0.0, horizontal: 10.0),
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0.0, horizontal: 10.0),
+                      border: const OutlineInputBorder(),
                       hintText: '請輸入密碼',
-                      hintStyle: TextStyle(color: Colors.black45),
+                      hintStyle: const TextStyle(color: Colors.black45),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                        borderSide: BorderSide(color: Colors.black26),
+                        borderRadius: borderRadius,
+                        borderSide: const BorderSide(color: Colors.black26),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black45),
-                        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                        borderSide: const BorderSide(color: Colors.black45),
+                        borderRadius: borderRadius,
                       ),
                     ),
                     cursorColor: Theme.of(context).primaryColor,
@@ -144,15 +169,35 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(
                   height: 40,
                 ),
-                CustomButton(
-                  color: Theme.of(context).primaryColor,
-                  text: '登入',
-                  textColor: Colors.white,
-                  onClick: login,
-                )
+                _isLoading
+                    ? TextButton(
+                        style: TextButton.styleFrom(
+                          splashFactory: NoSplash.splashFactory,
+                          backgroundColor:
+                              Theme.of(context).primaryColor.withOpacity(0.7),
+                          textStyle: Theme.of(context).textTheme.button,
+                          minimumSize: const Size(120, 42),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(50.0)),
+                          ),
+                        ),
+                        onPressed: () {},
+                        child: const SizedBox(
+                            width: 120,
+                            child: SpinKitThreeBounce(
+                              color: Colors.white,
+                              size: 20.0,
+                            )))
+                    : CustomButton(
+                        color: Theme.of(context).primaryColor,
+                        text: '登入',
+                        textColor: Colors.white,
+                        onClick: login,
+                      )
               ])),
         )
-      ]))),
+      ])))),
     );
   }
 }

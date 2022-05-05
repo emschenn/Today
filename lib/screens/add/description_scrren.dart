@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -9,12 +10,15 @@ import 'package:pichint/models/user_model.dart';
 import 'package:pichint/screens/home_screen.dart';
 import 'package:pichint/services/api_service.dart';
 import 'package:pichint/services/global_service.dart';
+import 'package:pichint/utils/show_dialog.dart';
 import 'package:pichint/widgets/custom_appbar.dart';
 import 'package:pichint/widgets/animated_dialog.dart';
 
 class AddDescScreen extends StatefulWidget {
   final Uint8List image;
-  const AddDescScreen({Key? key, required this.image}) : super(key: key);
+  final bool isFromRec;
+  const AddDescScreen({Key? key, required this.image, required this.isFromRec})
+      : super(key: key);
 
   @override
   State<AddDescScreen> createState() => _AddDescScreenState();
@@ -32,7 +36,7 @@ class _AddDescScreenState extends State<AddDescScreen>
 
   @override
   void initState() {
-    user = _global.getUserData;
+    user = _global.getUserData!;
     _editorController = TextEditingController();
     super.initState();
   }
@@ -47,7 +51,8 @@ class _AddDescScreenState extends State<AddDescScreen>
     setState(() {
       _loading = true;
     });
-    var identity = user.isParent! ? 'parent' : 'child';
+    var identity =
+        user.identity! == 'mom' || user.identity! == 'dad' ? 'parent' : 'child';
     var now = DateTime.now();
     var description = _editorController.text;
     var filename =
@@ -59,7 +64,15 @@ class _AddDescScreenState extends State<AddDescScreen>
       _loading = false;
     });
     if (uploadSuccess) {
-      Navigator.push(
+      await FirebaseAnalytics.instance.logEvent(
+        name: "upload_photo",
+        parameters: {
+          "user_id": user.uid,
+          "is_from_rec": widget.isFromRec,
+          // "photo_id": photo.pid,
+        },
+      );
+      Navigator.pushReplacement(
         context,
         PageTransition(
           type: PageTransitionType.topToBottom,
@@ -68,6 +81,27 @@ class _AddDescScreenState extends State<AddDescScreen>
           child: const HomeScreen(),
         ),
       );
+    } else {
+      await showAlertDialog(
+          context: context,
+          title: "上傳失敗",
+          content: "請確定手機是否正確連上網路後再試一次。若問題持續發生，請聯繫研究人員 💬",
+          cancelText: "再試一次",
+          cancelAction: () {
+            Navigator.of(context).pop(false);
+          },
+          confirmText: "回到相簿",
+          confirmAction: () {
+            Navigator.pushReplacement(
+              context,
+              PageTransition(
+                type: PageTransitionType.topToBottom,
+                duration: const Duration(milliseconds: 200),
+                reverseDuration: const Duration(milliseconds: 250),
+                child: const HomeScreen(),
+              ),
+            );
+          });
     }
   }
 
@@ -81,6 +115,7 @@ class _AddDescScreenState extends State<AddDescScreen>
         extendBodyBehindAppBar: false,
         appBar: CustomAppBar(
             title: '分享照片',
+            centerTitle: true,
             action: GestureDetector(
                 onTap: () {
                   if (_loading) return;
@@ -99,6 +134,8 @@ class _AddDescScreenState extends State<AddDescScreen>
                             const BorderRadius.all(Radius.circular(20.0))),
                     child: const Text('送出'))),
             leading: IconButton(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
                 icon: const Icon(
                   Icons.arrow_back_ios_rounded,
                   color: Colors.black87,
@@ -130,21 +167,21 @@ class _AddDescScreenState extends State<AddDescScreen>
                           flex: 1,
                           child: CupertinoTextField(
                               padding: const EdgeInsets.all(12),
+                              cursorColor: Colors.black54,
                               controller: _editorController,
                               minLines: 4,
                               maxLines: null,
-                              placeholder: "填寫圖片敘述",
+                              placeholder: "新增照片敘述 (選填)",
                               keyboardType: TextInputType.multiline,
                               style: Theme.of(context).textTheme.bodyText1),
                         ),
                       ]))),
           AnimatedDialog(
               isShow: _loading,
-              backgroundColor:
-                  Theme.of(context).primaryColorLight.withOpacity(0.8),
+              backgroundColor: const Color.fromARGB(50, 0, 0, 0),
               child: const Center(
                   child: SpinKitThreeBounce(
-                color: Colors.black45,
+                color: Colors.white,
                 size: 30.0,
               ))),
         ])));

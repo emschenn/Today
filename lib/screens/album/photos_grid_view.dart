@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:pichint/models/photo_model.dart';
-import 'package:pichint/screens/timeline/photo_card.dart';
+import 'package:pichint/screens/album/photo_card.dart';
 
 class PhotosGridView extends StatelessWidget {
   final List<PhotoData> photos;
