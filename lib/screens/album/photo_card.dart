@@ -81,12 +81,20 @@ class _PhotoCardState extends State<PhotoCard> {
                             },
                             loadingBuilder: (BuildContext context, Widget child,
                                 ImageChunkEvent? loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return SizedBox(
-                                  height: size.width * 0.45,
-                                  child: BlurHash(
-                                      imageFit: BoxFit.fill,
-                                      hash: widget.photo.blurHash!));
+                              Widget showWidget;
+                              if (loadingProgress == null) {
+                                showWidget = child;
+                              } else {
+                                showWidget = SizedBox(
+                                    height: size.width * 0.45,
+                                    child: BlurHash(
+                                        imageFit: BoxFit.fill,
+                                        hash: widget.photo.blurHash!));
+                              }
+                              return AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: showWidget,
+                              );
                             },
                           )),
                     ),

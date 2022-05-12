@@ -1,7 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
 import 'package:http/http.dart' as http;
@@ -43,7 +40,7 @@ class GeoData {
 }
 
 class ApiService {
-  String baseUrl = 'http://192.168.0.102:7700';
+  String baseUrl = 'http://rose.csie.ntu.edu.tw:7700/';
 
   Future<bool> checkIsServerAlive() async {
     try {
@@ -199,10 +196,10 @@ class ApiService {
     }
   }
 
-  Future<bool> sendViewCountNotification(uid, pid, count) async {
+  Future<bool> sendViewedNotification(uid, pid, count) async {
     try {
       final response = await http.post(
-        Uri.parse(baseUrl + '/notify/view'),
+        Uri.parse(baseUrl + '/notify/viewed'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

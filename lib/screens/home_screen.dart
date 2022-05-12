@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
+import 'package:quick_actions/quick_actions.dart';
 
 import 'package:pichint/models/album_model.dart';
 import 'package:pichint/models/user_model.dart';
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen>
         setState(() {});
       });
     super.initState();
+    quickActionsSetup();
     SchedulerBinding.instance?.addPostFrameCallback((_) {
       ApiService().checkIsServerAlive().then((success) async {
         if (!success) {
@@ -61,9 +63,21 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  void quickActionsSetup() async {
+    const QuickActions quickActions = QuickActions();
+
+    quickActions.setShortcutItems(<ShortcutItem>[
+      const ShortcutItem(
+        type: 'collect_images',
+        localizedTitle: '提供 AI 分析資料',
+      ),
+    ]);
+
+    quickActions.initialize((type) {
+      if (type == 'collect_images') {
+        ApiService().collectImages();
+      }
+    });
   }
 
   @override

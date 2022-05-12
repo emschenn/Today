@@ -68,9 +68,12 @@ class FirebaseService {
         updateValue = 1;
       }
       updates['${user.identity}'] = updateValue;
-      if (authorId != user.uid &&
-          updateValue == user.notifyWhenViewCountsEqual) {
-        ApiService().sendViewCountNotification(user.uid, pid, updateValue);
+      if (authorId != user.uid) {
+        if (updateValue == 1 && user.enableViewedNotify) {
+          ApiService().sendViewedNotification(user.uid, pid, 1);
+        } else if (updateValue == user.notifyWhenViewCountsEqual) {
+          ApiService().sendViewedNotification(user.uid, pid, updateValue);
+        }
       }
     });
     countsRef.update(updates).then((snapshot) {});

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -65,8 +66,15 @@ class _MyAppState extends State<MyApp> {
   final _global = GlobalService();
   UserData? user;
 
-  void handleNotificationClick(RemoteMessage msg) {
+  void handleNotificationClick(RemoteMessage msg) async {
     var data = msg.data;
+    await FirebaseAnalytics.instance.logEvent(
+      name: "click_notification",
+      parameters: {
+        "notification_type": data['action'],
+        "user_id": user!.uid,
+      },
+    );
     if (data['action'] == 'AI_NOTIFICATION') {
       Navigator.pushAndRemoveUntil(
           context,
@@ -122,7 +130,7 @@ class _MyAppState extends State<MyApp> {
     });
 
     /// Handler when app is in background but opened and user taps
-    FirebaseMessaging.onMessageOpenedApp.listen((msg) {
+    FirebaseMessaging.onMessageOpenedApp.listen((msg) async {
       print('app is in background but opened and user taps');
       handleNotificationClick(msg);
     });
@@ -173,13 +181,18 @@ class _MyAppState extends State<MyApp> {
         return user;
       }),
       builder: (context, snapshot) {
+        Widget child;
         if (snapshot.hasError) {
-          return const LoginScreen();
+          child = const LoginScreen();
         } else if (snapshot.hasData) {
-          return const HomeScreen();
+          child = const HomeScreen();
         } else {
-          return const SplashScreen();
+          child = const SplashScreen();
         }
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: child,
+        );
       },
     );
   }
