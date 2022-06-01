@@ -53,8 +53,8 @@ class _EditPanelState extends State<EditPanel> {
           },
           confirmText: "刪除",
           confirmAction: () async {
-            final writeSuccess =
-                await ApiService().deleteImage(widget.user.group, widget.photo);
+            final writeSuccess = await ApiService()
+                .deleteImage(widget.user.group, widget.photo, widget.user.uid);
             if (writeSuccess) {
               await FirebaseAnalytics.instance.logEvent(
                 name: "delete_photo",
@@ -162,6 +162,7 @@ class _EditPanelState extends State<EditPanel> {
               ),
               child: Column(children: [
                 GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () {
                       _editPhoto();
                     },
@@ -179,6 +180,7 @@ class _EditPanelState extends State<EditPanel> {
                   color: Colors.black45,
                 ),
                 GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () {
                       _deletePhoto();
                     },
@@ -192,6 +194,7 @@ class _EditPanelState extends State<EditPanel> {
               ])),
         ],
         GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               _savePhoto();
             },

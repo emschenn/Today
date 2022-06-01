@@ -7,14 +7,11 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
-import 'package:pichint/models/photo_model.dart';
 import 'package:pichint/models/user_model.dart';
 import 'package:pichint/screens/add/description_scrren.dart';
 import 'package:pichint/services/api_service.dart';
-import 'package:pichint/services/firebase_service.dart';
 import 'package:pichint/services/global_service.dart';
 import 'package:pichint/widgets/custom_appbar.dart';
-import 'package:pichint/widgets/custom_button.dart';
 import 'package:pichint/config/icons.dart';
 
 class AddPhotoScreen extends StatefulWidget {
@@ -32,7 +29,9 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
   late AnimationController _focusAnimationController;
   late UserData user;
   List<dynamic>? _photoList;
+  List<String>? recPaths;
   Uint8List? selectedImage;
+  int selectedIndex = -1;
   bool loadingSelectedImage = false;
   bool showRec = false;
   bool selectFromRec = false;
@@ -71,6 +70,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
       } else {
         setState(() {
           showRec = true;
+          recPaths = result.paths;
           _photoList = imgList;
         });
       }
@@ -104,6 +104,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
     var originalImage = selectedImage;
     setState(() {
       selectedImage = null;
+      selectedIndex = -1;
       loadingSelectedImage = true;
     });
     final XFile? file = await _imgPicker.pickImage(source: ImageSource.gallery);
@@ -151,7 +152,12 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                           duration: const Duration(milliseconds: 200),
                           reverseDuration: const Duration(milliseconds: 250),
                           child: AddDescScreen(
-                              image: selectedImage!, isFromRec: selectFromRec),
+                              image: selectedImage!,
+                              isFromRecIndex:
+                                  selectFromRec ? selectedIndex : -1,
+                              recPath: selectFromRec
+                                  ? recPaths![selectedIndex]
+                                  : null),
                         ),
                       );
                     })
@@ -180,15 +186,38 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                             color: Colors.grey[100],
                             child: selectedImage == null
                                 ? loadingSelectedImage
-                                    ? const SpinKitThreeBounce(
-                                        color: Colors.black45,
-                                        size: 30.0,
-                                      )
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                            const SpinKitThreeBounce(
+                                              color: Colors.black45,
+                                              size: 30.0,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text('準備預覽照片中',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .caption)
+                                          ])
                                     : Center(
-                                        child: Text('從下方選擇欲分享的照片',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyText1))
+                                        child: Wrap(
+                                            alignment: WrapAlignment.center,
+                                            children: [
+                                            Text('從下方選擇欲分享的照片',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyText1),
+                                            const SizedBox(
+                                              height: 24,
+                                            ),
+                                            Text('或點擊右下角選擇其他照片',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .caption),
+                                          ]))
                                 : Hero(
                                     tag: selectedImage!,
                                     child: Image.memory(
@@ -209,10 +238,21 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                         if (_photoList == null)
                           SizedBox(
                               height: 100,
-                              child: SpinKitThreeBounce(
-                                color: Theme.of(context).primaryColorLight,
-                                size: 30.0,
-                              ))
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SpinKitThreeBounce(
+                                      color: Theme.of(context)
+                                          .primaryColorLight
+                                          .withOpacity(0.5),
+                                      size: 30.0,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text('載入照片中',
+                                        style:
+                                            Theme.of(context).textTheme.caption)
+                                  ]))
                         else ...[
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,6 +292,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                                       InkWell(
                                           onTap: () {
                                             setState(() {
+                                              selectedIndex = index;
                                               selectedImage =
                                                   _photoList![index];
                                               selectFromRec =
@@ -282,6 +323,7 @@ class _AddPhotoScreenState extends State<AddPhotoScreen>
                                 GestureDetector(
                                     onTap: () {
                                       setState(() {
+                                        selectedIndex = -1;
                                         selectedImage = null;
                                       });
                                     },

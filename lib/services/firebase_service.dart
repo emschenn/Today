@@ -1,7 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:pichint/models/user_model.dart';
 import 'package:pichint/services/api_service.dart';
-import 'package:pichint/services/global_service.dart';
 
 class FirebaseService {
   final _database = FirebaseDatabase.instance.ref();
@@ -11,9 +10,9 @@ class FirebaseService {
     final usersRef = _database.child('/users/$uid');
     await usersRef.once().then((event) {
       final json = event.snapshot.value as Map<dynamic, dynamic>;
+      print(json);
       user = UserData.fromJson(json, uid);
     });
-    print(user!.uid);
     return user!;
   }
 
@@ -56,11 +55,13 @@ class FirebaseService {
     await usersRef.update(updates).then((snapshot) {});
   }
 
-  Future<void> updatePhotoViewCount(user, pid, authorId) async {
+  Future<void> updatePhotoViewCount(user, photo, authorId) async {
     Map<String, Object?> updates = {};
     int updateValue;
-    final countsRef = _database.child('/groups/${user.group}/photos/$pid');
-    await countsRef.child('viewCounts/${user.identity}').once().then((event) {
+    final viewCountsRef =
+        _database.child('/groups/${user.group}/photos/${photo.pid}/viewCounts');
+    await viewCountsRef.child('${user.identity}').once().then((event) {
+      // print(event.snapshot.value);
       if (event.snapshot.value != null) {
         var currentCounts = int.parse(event.snapshot.value.toString());
         updateValue = currentCounts + 1;
@@ -69,13 +70,12 @@ class FirebaseService {
       }
       updates['${user.identity}'] = updateValue;
       if (authorId != user.uid) {
-        if (updateValue == 1 && user.enableViewedNotify) {
-          ApiService().sendViewedNotification(user.uid, pid, 1);
-        } else if (updateValue == user.notifyWhenViewCountsEqual) {
-          ApiService().sendViewedNotification(user.uid, pid, updateValue);
-        }
+        bool sendNotification = (updateValue == 1 && user.enableViewedNotify) ||
+            (updateValue == user.notifyWhenViewCountsEqual);
+        ApiService().sendViewedNotification(
+            user.name, authorId, photo, updateValue, sendNotification);
       }
     });
-    countsRef.update(updates).then((snapshot) {});
+    viewCountsRef.update(updates).then((snapshot) {});
   }
 }

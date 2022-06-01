@@ -2,7 +2,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:pichint/models/album_model.dart';
+import 'package:pichint/models/user_model.dart';
 import 'package:pichint/services/firebase_service.dart';
+import 'package:pichint/services/global_service.dart';
 import 'package:pichint/utils/datetime.dart';
 
 import 'package:pichint/models/photo_model.dart';
@@ -36,9 +38,9 @@ class _AlbumScreenState extends State<AlbumScreen>
 
   void _scrollListener() {
     // print(_scrollController.position.extentAfter);
-    if (_scrollController.position.extentAfter < 100) {
-      _loadData(false);
-    }
+    // if (_scrollController.position.extentAfter < 100) {
+    //   _loadData(false, _preprocessedData);
+    // }
   }
 
   @override
@@ -66,15 +68,14 @@ class _AlbumScreenState extends State<AlbumScreen>
     return map;
   }
 
-  void _loadData(bool init) {
+  Map<DateTime, List<PhotoData>>? _loadData(
+      bool init, Map<DateTime, List<PhotoData>> data) {
     int currentCounts = _currentShownData.length;
     if (currentCounts < _preprocessedData.length) {
       var start = currentCounts;
-      var end = start + 4 < _preprocessedData.length
-          ? start + 4
-          : _preprocessedData.length;
-      var keysToAdd = _preprocessedData.keys.toList().sublist(start, end);
-      var valuesToAdd = _preprocessedData.values.toList().sublist(start, end);
+      var end = start + 4 < data.length ? start + 4 : data.length;
+      var keysToAdd = data.keys.toList().sublist(start, end);
+      var valuesToAdd = data.values.toList().sublist(start, end);
       Map<DateTime, List<PhotoData>> dataToAdd = {
         for (int i = 0; i < keysToAdd.length; i++) keysToAdd[i]: valuesToAdd[i]
       };
@@ -85,6 +86,7 @@ class _AlbumScreenState extends State<AlbumScreen>
       } else {
         _currentShownData = Map.from(_currentShownData)..addAll(dataToAdd);
       }
+      return Map.from(_currentShownData)..addAll(dataToAdd);
     }
   }
 
@@ -102,11 +104,11 @@ class _AlbumScreenState extends State<AlbumScreen>
       }
       if (model.photos!.isNotEmpty) {
         _preprocessedData = _getPreprocessedData(model.photos);
-        _loadData(true);
+        // var data = _loadData(true, _preprocessedData);
         return SingleChildScrollView(
             controller: _scrollController,
             child: Column(
-                children: _currentShownData.entries.map((entry) {
+                children: _preprocessedData.entries.map((entry) {
               var date = DateText(date: entry.key);
               var grid = PhotosGridView(
                 photos: entry.value,

@@ -21,10 +21,8 @@ ThemeData basicTheme() {
       ),
       bodyText2:
           base.bodyText1?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
-      caption: base.caption?.copyWith(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-      ),
+      caption:
+          base.caption?.copyWith(fontSize: 13, fontWeight: FontWeight.w500),
       button: base.subtitle1?.copyWith(
           fontSize: 15,
           fontWeight: FontWeight.w700,

@@ -53,7 +53,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
 
   void recordUserViewUponEnter() async {
     await _firebaseService.updatePhotoViewCount(
-        user, widget.photo.pid, widget.photo.authorId);
+        user, widget.photo, widget.photo.authorId);
   }
 
   String formattedDateTime(dateTime) {

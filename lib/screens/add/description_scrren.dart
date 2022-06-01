@@ -16,8 +16,13 @@ import 'package:pichint/widgets/animated_dialog.dart';
 
 class AddDescScreen extends StatefulWidget {
   final Uint8List image;
-  final bool isFromRec;
-  const AddDescScreen({Key? key, required this.image, required this.isFromRec})
+  final int isFromRecIndex;
+  final String? recPath;
+  const AddDescScreen(
+      {Key? key,
+      required this.image,
+      required this.isFromRecIndex,
+      required this.recPath})
       : super(key: key);
 
   @override
@@ -58,8 +63,9 @@ class _AddDescScreenState extends State<AddDescScreen>
     var filename =
         '${user.group}_${identity}_${now.millisecondsSinceEpoch}.jpg';
     var image = MultipartFile.fromBytes(widget.image, filename: filename);
-    final uploadSuccess =
-        await ApiService().uploadImage(image, user, description);
+    var isFromRec = widget.isFromRecIndex != -1;
+    final uploadSuccess = await ApiService()
+        .uploadImage(image, user, description, isFromRec, widget.recPath);
     setState(() {
       _loading = false;
     });
@@ -68,7 +74,7 @@ class _AddDescScreenState extends State<AddDescScreen>
         name: "upload_photo",
         parameters: {
           "user_id": user.uid,
-          "is_from_rec": widget.isFromRec,
+          "is_from_rec": isFromRec,
           // "photo_id": photo.pid,
         },
       );
@@ -109,7 +115,6 @@ class _AddDescScreenState extends State<AddDescScreen>
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
     var contentWidth = size.width - 40;
-
     return Scaffold(
         backgroundColor: Colors.white,
         extendBodyBehindAppBar: false,

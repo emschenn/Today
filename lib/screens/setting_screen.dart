@@ -81,6 +81,7 @@ class _SettingScreenState extends State<SettingScreen> {
 
   void _done() async {
     var _firebaseService = FirebaseService();
+    print(user.enableViewedNotify);
     if ((_displayNameController.text == user.name ||
             _displayNameController.text.isEmpty) &&
         (notifyWhenViewed == user.notifyWhenViewCountsEqual!) &&
