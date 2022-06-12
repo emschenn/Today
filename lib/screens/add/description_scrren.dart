@@ -43,6 +43,7 @@ class _AddDescScreenState extends State<AddDescScreen>
   void initState() {
     user = _global.getUserData!;
     _editorController = TextEditingController();
+    print(widget.isFromRecIndex);
     super.initState();
   }
 
@@ -63,9 +64,8 @@ class _AddDescScreenState extends State<AddDescScreen>
     var filename =
         '${user.group}_${identity}_${now.millisecondsSinceEpoch}.jpg';
     var image = MultipartFile.fromBytes(widget.image, filename: filename);
-    var isFromRec = widget.isFromRecIndex != -1;
-    final uploadSuccess = await ApiService()
-        .uploadImage(image, user, description, isFromRec, widget.recPath);
+    final uploadSuccess = await ApiService().uploadImage(
+        image, user, description, widget.isFromRecIndex, widget.recPath);
     setState(() {
       _loading = false;
     });
@@ -74,7 +74,7 @@ class _AddDescScreenState extends State<AddDescScreen>
         name: "upload_photo",
         parameters: {
           "user_id": user.uid,
-          "is_from_rec": isFromRec,
+          "rec_index": widget.isFromRecIndex,
           // "photo_id": photo.pid,
         },
       );

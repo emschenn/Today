@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       UserCredential userCredential =
           await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _accountController.text.trim(),
+        email: _accountController.text.trim() + '@mail.com',
         password: _passwordController.text.trim(),
       );
       String uid = userCredential.user!.uid;
@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
                           vertical: 0.0, horizontal: 10.0),
-                      hintText: '請輸入帳號 (您的信箱)',
+                      hintText: '請輸入帳號',
                       enabledBorder: OutlineInputBorder(
                         borderRadius: borderRadius,
                         borderSide: const BorderSide(color: Colors.black26),

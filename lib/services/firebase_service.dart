@@ -55,12 +55,20 @@ class FirebaseService {
     await usersRef.update(updates).then((snapshot) {});
   }
 
+  Future<void> updateSaved(user, photo) async {
+    Map<String, Object?> updates = {};
+    updates['${user.identity}'] = true;
+    final isSavedRef =
+        _database.child('/groups/${user.group}/photos/${photo.pid}/isSaved');
+    await isSavedRef.update(updates).then((snapshot) {});
+  }
+
   Future<void> updatePhotoViewCount(user, photo, authorId) async {
     Map<String, Object?> updates = {};
     int updateValue;
     final viewCountsRef =
         _database.child('/groups/${user.group}/photos/${photo.pid}/viewCounts');
-    await viewCountsRef.child('${user.identity}').once().then((event) {
+    await viewCountsRef.child('${user.identity}').once().then((event) async {
       // print(event.snapshot.value);
       if (event.snapshot.value != null) {
         var currentCounts = int.parse(event.snapshot.value.toString());
@@ -70,8 +78,10 @@ class FirebaseService {
       }
       updates['${user.identity}'] = updateValue;
       if (authorId != user.uid) {
-        bool sendNotification = (updateValue == 1 && user.enableViewedNotify) ||
-            (updateValue == user.notifyWhenViewCountsEqual);
+        UserData authorData = await getUserData(authorId);
+        bool sendNotification =
+            (updateValue == 1 && authorData.enableViewedNotify!) ||
+                (updateValue == user.notifyWhenViewCountsEqual);
         ApiService().sendViewedNotification(
             user.name, authorId, photo, updateValue, sendNotification);
       }

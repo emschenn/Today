@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:pichint/services/collect_image_service.dart';
 import 'package:pichint/services/fcm_service.dart';
 import 'package:pichint/widgets/animated_dialog.dart';
@@ -108,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void checkDataUpdate() async {
+    await PhotoManager.requestPermission();
     CollectedImage collectedImage = await collectImagesFromLibrary(user);
     if (collectedImage.imgList!.isNotEmpty) {
       _collectImgController.open();
@@ -157,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen>
                       Container(
                           margin: const EdgeInsets.symmetric(
                               vertical: 12, horizontal: 32),
-                          child: Text('同步手機相簿的資料以做出分享建議',
+                          child: Text('同步手機相簿的資料\n以供 AI 做出分享建議',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.caption)),
                       const SizedBox(

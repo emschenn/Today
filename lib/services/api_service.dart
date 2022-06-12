@@ -42,14 +42,14 @@ class ApiService {
     }
   }
 
-  Future<bool> uploadImage(image, user, description, isFromRec, recPath) async {
+  Future<bool> uploadImage(image, user, description, recIndex, recPath) async {
     bool isSuccess;
 
     var formData = FormData.fromMap({
       'image': image,
       'user': json.encode(user),
       'description': description,
-      'is_from_rec': isFromRec,
+      'rec_index': recIndex,
       'rec_path': recPath
     });
     try {

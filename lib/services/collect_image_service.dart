@@ -90,6 +90,7 @@ Future<CollectedImage> collectImagesFromLibrary(user) async {
       if (imgTimestamp <= currentTimestamp) break;
       var type = await img.titleAsync;
       if (type.split(".")[1] == 'PNG') continue;
+      if (img.height == 0 || img.width == 0) continue;
       await img
           .thumbDataWithSize(600, 600 * img.height ~/ img.width)
           .then((value) {

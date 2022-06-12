@@ -96,6 +96,7 @@ class _EditPanelState extends State<EditPanel> {
         bytes,
         title: widget.photo.filename!.toString(),
       );
+      await FirebaseService().updateSaved(widget.user, widget.photo);
       await FirebaseAnalytics.instance.logEvent(
         name: "save_photo",
         parameters: {

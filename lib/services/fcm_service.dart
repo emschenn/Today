@@ -5,6 +5,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:pichint/models/photo_model.dart';
 import 'package:pichint/models/user_model.dart';
@@ -93,6 +94,24 @@ class FcmService {
       print('app is in background but opened and user taps');
       handleNotificationClick(context, msg);
     });
+
+    AndroidNotificationChannel channel = const AndroidNotificationChannel(
+      'high_importance_channel', // id
+      'High Importance Notifications', // title
+      importance: Importance.high,
+    );
+
+    FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
+
+    // Create an Android Notification Channel.
+    //
+    /// We use this channel in the `AndroidManifest.xml` file to override the
+    /// default FCM channel to enable heads up notifications.
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
 
     await messaging.setForegroundNotificationPresentationOptions(
       alert: true, // Required to display a heads up notification
